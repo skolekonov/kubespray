@@ -12,7 +12,7 @@ stream {
             least_conn;
             {% for host in groups['kube-master'] -%}
             server {{ hostvars[host]['access_ip'] | default(hostvars[host]['ip'] | default(fallback_ips[host])) }}:{{ kube_apiserver_port }};
-            {% endfor -%}
+            {% endfor %}
         }
 
         server {
