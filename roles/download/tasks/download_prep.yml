@@ -1,13 +1,20 @@
 ---
+# Use the same format for Containerd images as for Docker images
+# ctr doesn't have inspect command
 - name: Register docker images info
   shell: >-
-    {{ docker_bin_dir }}/docker images -q | xargs {{ docker_bin_dir }}/docker inspect -f "{{ '{{' }} (index .RepoTags 0) {{ '}}' }},{{ '{{' }} (index .RepoDigests 0) {{ '}}' }}" | tr '\n' ','
+    {% if container_manager == 'docker' %}
+    {{ docker_bin_dir }}/docker images -q | xargs {{ docker_bin_dir }}/docker inspect -f "{{ '{{' }} if .RepoTags {{ '}}' }}{{ '{{' }} (index .RepoTags 0) {{ '}}' }}{{ '{{' }} end {{ '}}' }}{{ '{{' }} if .RepoDigests {{ '}}' }},{{ '{{' }} (index .RepoDigests 0) {{ '}}' }}{{ '{{' }} end {{ '}}' }}" | tr '\n' ','
+    {% elif container_manager == 'containerd' %}
+    {{ containerd_bin_dir }}/ctr images ls | tail -n +2 | awk -F '[ :]+' '{print $1":"$2","$1":"$4"@"$5}' | tr '\n' ','
+    {% endif %}
   no_log: true
   register: docker_images
   failed_when: false
   changed_when: false
   check_mode: no
-  when: download_container
+  when:
+    - download_container
 
 - name: container_download | Create dest directory for saved/loaded container images
   file:

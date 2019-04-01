@@ -21,3 +21,10 @@ dependencies:
       - container-engine
       - docker
       - rkt
+
+  - role: container-engine/containerd
+    when:
+      - container_manager == 'containerd'
+    tags:
+      - container-engine
+      - containerd

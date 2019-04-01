@@ -25,6 +25,12 @@
     - download_run_once
     - group_names | intersect(download.groups) | length
 
+# crictl is required for kubeadm to pull images when containerd used
+- include_tasks: crictl.yml
+  when:
+    - not skip_downloads|default(false)
+    - container_manager == 'containerd'
+
 - include_tasks: kubeadm_images.yml
   when:
     - kube_version is version('v1.11.0', '>=')

@@ -34,6 +34,19 @@
     owner: root
     group: root
   changed_when: false
+  when:
+    - container_manager == 'docker'
+
+- name: Calico | Install calicoctl container script
+  template:
+    src: calicoctl-container-containerd.j2
+    dest: "{{ bin_dir }}/calicoctl"
+    mode: 0755
+    owner: root
+    group: root
+  changed_when: false
+  when:
+    - container_manager == 'containerd'
 
 - name: Calico | Copy cni plugins
   unarchive:
@@ -51,7 +64,12 @@
     mode: 0755
 
 - name: Calico | Copy cni plugins from calico/cni container
-  command: "{{ docker_bin_dir }}/docker run --rm -v /opt/cni/bin:/cnibindir {{ calico_cni_image_repo }}:{{ calico_cni_image_tag }} sh -c 'cp /opt/cni/bin/* /cnibindir/'"
+  command: >-
+    {% if container_manager == 'docker' %}
+    {{ docker_bin_dir }}/docker run --rm -v /opt/cni/bin:/cnibindir {{ calico_cni_image_repo }}:{{ calico_cni_image_tag }} sh -c 'cp /opt/cni/bin/* /cnibindir/'
+    {% elif container_manager == 'containerd' %}
+    {{ containerd_bin_dir }}/ctr run --rm --mount type=bind,src=/opt/cni/bin,dst=/cnibindir,options=rbind:rw {{ calico_cni_image_repo }}:{{ calico_cni_image_tag }} calico-tmp sh -c 'cp /opt/cni/bin/* /cnibindir/'
+    {% endif %}
   register: cni_task_result
   until: cni_task_result.rc == 0
   retries: 4
@@ -59,6 +77,19 @@
   changed_when: false
   when:
     - "overwrite_hyperkube_cni|bool"
+  tags:
+    - hyperkube
+    - upgrade
+
+- name: Calico | Copy calicoctl binary from calico/ctl container
+  command: "{{ containerd_bin_dir }}/ctr run --rm --mount type=bind,src=/opt/cni/bin,dst=/bindir,options=rbind:rw {{ calicoctl_image_repo }}:{{ calicoctl_image_tag}} calico sh -c 'cp /calicoctl /bindir'"
+  register: cni_task_result
+  until: cni_task_result.rc == 0
+  retries: 4
+  delay: "{{ retry_stagger | random + 3 }}"
+  changed_when: false
+  when:
+    - container_manager == 'containerd'
   tags:
     - hyperkube
     - upgrade

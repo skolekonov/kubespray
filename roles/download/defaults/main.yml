@@ -62,11 +62,14 @@ cilium_version: "v1.3.0"
 kube_router_version: "v0.2.1"
 multus_version: "v3.1.autoconf"
 
+crictl_version: "v1.14.0"
+
 # Download URLs
 kubeadm_download_url: "https://storage.googleapis.com/kubernetes-release/release/{{ kubeadm_version }}/bin/linux/{{ image_arch }}/kubeadm"
 hyperkube_download_url: "https://storage.googleapis.com/kubernetes-release/release/{{ kube_version }}/bin/linux/{{ image_arch }}/hyperkube"
 etcd_download_url: "https://github.com/coreos/etcd/releases/download/{{ etcd_version }}/etcd-{{ etcd_version }}-linux-{{ image_arch }}.tar.gz"
 cni_download_url: "https://github.com/containernetworking/plugins/releases/download/{{ cni_version }}/cni-plugins-{{ image_arch }}-{{ cni_version }}.tgz"
+crictl_download_url: "https://github.com/kubernetes-sigs/cri-tools/releases/download/{{ crictl_version }}/crictl-{{ crictl_version }}-linux-{{ image_arch }}.tar.gz"
 
 # Checksums
 hyperkube_checksums:
@@ -131,6 +134,9 @@ kubeadm_checksums:
     v1.12.2: 51bc4bfd1d934a27245111c0ad1f793d5147ed15389415a1509502f23fcfa642
     v1.12.1: 5d95efd65aad398d85a9802799f36410ae7a95f9cbe73c8b10d2213c10a6d7be
     v1.12.0: 463fb058b7fa2591fb01f29f2451b054f6cbaa0f8a20394b4a4eb5d68473176f
+crictl_binary_checksums:
+  amd64:
+    v1.14.0: 483c90a9fe679590df4332ba807991c49232e8cd326c307c575ecef7fe22327b
 
 etcd_binary_checksums:
   arm64: 7d3db622fb8d22a669a9351e1002ed2a7a776004a4a35888734bf39323889390
@@ -143,6 +149,7 @@ etcd_binary_checksum: "{{ etcd_binary_checksums[image_arch] }}"
 cni_binary_checksum: "{{ cni_binary_checksums[image_arch] }}"
 hyperkube_binary_checksum: "{{ hyperkube_checksums[image_arch][kube_version] }}"
 kubeadm_binary_checksum: "{{ kubeadm_checksums[image_arch][kubeadm_version] }}"
+crictl_binary_checksum: "{{ crictl_binary_checksums[image_arch][crictl_version] }}"
 
 # Containers
 # In some cases, we need a way to set --registry-mirror or --insecure-registry for docker,
@@ -199,7 +206,7 @@ kube_router_image_repo: "cloudnativelabs/kube-router"
 kube_router_image_tag: "{{ kube_router_version }}"
 multus_image_repo: "docker.io/nfvpe/multus"
 multus_image_tag: "{{ multus_version }}"
-nginx_image_repo: nginx
+nginx_image_repo: docker.io/library/nginx
 nginx_image_tag: 1.13
 dnsmasq_version: 2.78
 dnsmasq_image_repo: "andyshinn/dnsmasq"
@@ -209,7 +216,7 @@ kubedns_image_repo: "gcr.io/google_containers/k8s-dns-kube-dns-{{ image_arch }}"
 kubedns_image_tag: "{{ kubedns_version }}"
 
 coredns_version: "1.2.6"
-coredns_image_repo: "coredns/coredns"
+coredns_image_repo: "docker.io/coredns/coredns"
 coredns_image_tag: "{{ coredns_version }}"
 
 nodelocaldns_version: "1.15.1"
@@ -247,7 +254,7 @@ local_volume_provisioner_image_repo: "quay.io/external_storage/local-volume-prov
 local_volume_provisioner_image_tag: "v2.1.0"
 cephfs_provisioner_image_repo: "quay.io/external_storage/cephfs-provisioner"
 cephfs_provisioner_image_tag: "v2.1.0-k8s1.11"
-local_path_provisioner_image_repo: "rancher/local-path-provisioner"
+local_path_provisioner_image_repo: "docker.io/rancher/local-path-provisioner"
 local_path_provisioner_image_tag: "v0.0.2"
 ingress_nginx_controller_image_repo: "quay.io/kubernetes-ingress-controller/nginx-ingress-controller"
 ingress_nginx_controller_image_tag: "0.21.0"
@@ -330,6 +337,19 @@ downloads:
     sha256: "{{ hyperkube_binary_checksum }}"
     url: "{{ hyperkube_download_url }}"
     unarchive: false
+    owner: "root"
+    mode: "0755"
+    groups:
+      - k8s-cluster
+
+  crictl:
+    file: true
+    enabled: true
+    version: "{{ crictl_version }}"
+    dest: "{{local_release_dir}}/crictl-{{ crictl_version }}-linux-amd64.tar.gz"
+    sha256: "{{ crictl_binary_checksum }}"
+    url: "{{ crictl_download_url }}"
+    unarchive: true
     owner: "root"
     mode: "0755"
     groups:
